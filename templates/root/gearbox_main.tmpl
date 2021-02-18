@@ -1,0 +1,25 @@
+package main
+
+import (
+	"{{ .Data.Module }}/internal/route"
+	"github.com/gogearbox/gearbox"
+	"github.com/iamgoroot/gearpg"
+)
+
+func main() {
+	app := &gearpg.GeaRPG{Gear: gearbox.New(), PG: connect()}
+	defer app.PG.Close()
+
+	RouteStatic(app)
+{{ $camel := .CamelCase }}
+    app.With(
+    {{- range $index, $element := .Data.Names }}
+        route.{{ call $camel $element }}(),
+    {{- end }}
+    )
+	// Start service
+	err := app.Gear.Start(":7890")
+	if err != nil {
+		panic(err)
+	}
+}

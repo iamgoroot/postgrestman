@@ -1,0 +1,34 @@
+package route
+
+import (
+    "github.com/iamgoroot/gearpg"
+    rqp "github.com/timsolov/rest-query-parser"
+    "{{ .Data.Module }}/internal/models"
+)
+
+{{- $lowCamel := .LowCamelCase }}
+{{- $snake := .SnakeCase }}
+{{- $ccName := call .CamelCase .Data.Name }}
+{{- $lccName := call .LowCamelCase .Data.Name }}
+
+func {{ $ccName }}() *gearpg.Endpoint {
+    return &gearpg.Endpoint{
+        Route : "/{{ $lccName }}",
+        Validations: rqp.Validations{
+            "sort": rqp.In( {{- range $i, $v := .Data.Entities }}
+                "{{ $v.ColumnName | call $lowCamel }}",{{ end }}
+            ), {{ range $i, $v := .Data.Filterable }}
+            "{{ call $lowCamel $v }}": nil,
+            {{- end }}
+        },
+        Replacer: rqp.Replacer{ {{ range $i, $v := .Data.Entities }}
+            {{ $v.ColumnName | call $lowCamel | printf "\"%s\":" | printf "%-30s" }}"{{ call $snake $v.ColumnName}}",{{ end }}
+        },
+        MakeOne : func() interface{} {
+            return &models.{{ $ccName }}{}
+        },
+        MakeSlice : func() interface{} {
+            return &[]models.{{ $ccName }}{}
+        },
+    }
+}

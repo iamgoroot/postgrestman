@@ -1,0 +1,12 @@
+services:
+  serve:
+    image: golang:1.16-alpine
+    volumes:
+      - .:/src
+    environment:
+      CGO_ENABLED: 0
+
+    working_dir: /src
+    command: go mod tidy && go build ./... && go run {{ module}}
+    ports:
+      - 1234:1234

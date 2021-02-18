@@ -1,0 +1,24 @@
+openapi: 3.0.3
+{{- $camel := .CamelCase }}
+{{- $lowCamel := .LowCamelCase }}
+info:
+  title: Generated server API docs
+  version: '0.1'
+  description: |-
+    Generated server API docs
+  contact:
+    url: 'none'
+    name: "iamgoroot@gmail.com"
+paths:
+    {{- range $index, $element := .Data.Names }}
+    '/{{ $element }}':
+        $ref: 'openapi-{{$element}}.yaml#/paths/{{ $element }}'
+    {{- end}}
+components:
+    schemas:
+    {{- range $index, $element := .Data.Names }}
+    {{ call $camel $element }}ListResponse:
+        $ref: 'openapi-{{$element}}.yaml#/components/schemas/{{ call $camel $element }}ListResponse'
+    {{ call $camel $element }}Response:
+        $ref: 'openapi-{{$element}}.yaml#/components/schemas/{{ call $camel $element }}Response'
+    {{- end}}

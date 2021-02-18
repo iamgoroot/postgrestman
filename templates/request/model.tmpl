@@ -1,0 +1,23 @@
+package models
+{{- $ctx := . }}
+{{- $camel := .CamelCase }}
+{{- $lowCamel := .LowCamelCase }}
+{{- $tp := .Data.GoType }}
+
+
+{{- if ne (len .Exported) 0 }}
+import (
+{{ .Imports }}
+)
+{{end}}
+
+type {{ call $camel .Data.Name }} struct {
+	tableName struct{} `pg:"{{ .Data.Name }}"`
+    {{- range $index, $element := .Data.Entities }}
+        {{- $col := $element.ColumnName }}
+        {{- $t := call $tp .DataType }}
+        {{- $t.Pkg  | $ctx.Import  }}
+        {{ call $camel .ColumnName }} {{ $t.Name }} {{"\t"}}{{"\t"}}{{"\t"}}`json:"{{ call $lowCamel .ColumnName }}",pg:"{{ .ColumnName }}{{if ne .ColumnDefault ""}},default:{{ .ColumnDefault }}{{end}}"`
+    {{- end }}
+}
+

@@ -1,0 +1,39 @@
+package main
+
+import (
+	"github.com/go-pg/pg"
+	"github.com/gogearbox/gearbox"
+	"github.com/iamgoroot/gearpg"
+)
+
+func connect() *pg.DB {
+	return pg.Connect(&pg.Options{
+		User:     "test",
+		Password: "test",
+		Database: "test",
+		Addr:     "127.0.0.1:5432",
+	})
+}
+
+func RouteStatic(p *gearpg.GeaRPG) {
+
+    p.Gear.Static("/openapi", "./api")
+    {{ if eq .Data.OpenApiUI "rapidoc" }}
+	p.Gear.Get("/docs", func(ctx gearbox.Context) {
+		ctx.Context().SetContentType("text/html")
+		ctx.SendString(`<!doctype html>
+			<html>
+			<head>
+                <meta charset="utf-8">
+                <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+			</head>
+			<body>
+                <rapi-doc spec-url = "/openapi/openapi.yaml"> </rapi-doc>
+			</body>
+			</html>`)
+	})
+    {{ end }}
+    {{ if eq .Data.OpenApiUI "swagger" }}
+        p.Gear.Static("/swagger", "./swagger-ui/dist")
+    {{ end }}
+}

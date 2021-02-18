@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  version: 0.1
+  title:  {{ .Data.Name }} request for openapi spec
+paths:
+{{- $camel := .CamelCase }}
+{{- $lowCamel := .LowCamelCase }}
+  {{ .Data.Name }}:
+    parameters:
+      - in: query
+        name: sort
+        schema:
+          type: string
+        description: sort by indexed column  ("+columnName", "-columnName")
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: limit maximum number of returned objects
+      - in: query
+        name: offset
+        schema:
+          type: string
+        description: offset results by given value
+      - in: query
+        name: columnName[filterOperation]
+        schema:
+          type: string
+        description: Perform filtering using following operators `eq, ne, gt, lt, gte, lte, like, ilike, nlike, nilike, in, nin, is, not`
+    get:
+      summary: {{ .Data.Name }} List
+      tags: [{{ call $lowCamel .Data.Name }}]
+      responses:
+        '200':
+          description: List of requested entities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{ call $camel .Data.Name }}ListResponse'
+      operationId: get-{{ call $lowCamel .Data.Name }}
+      description: ''
+    post:
+      summary: {{ .Data.Name }} Create
+      tags: [{{ call $lowCamel .Data.Name }}]
+      requestBody:
+        description: Entity body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{ call $camel .Data.Name }}Response'
+      operationId: post-{{ call $lowCamel .Data.Name }}
+      responses:
+        '201':
+          description: Created
+      description: ''
+    patch:
+      summary: {{ .Data.Name }} Update
+      tags: [{{ call $lowCamel .Data.Name }}]
+      requestBody:
+        description: Entity body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{ call $camel .Data.Name }}Response'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AffectedRows:
+                    type: integer
+      operationId: post-{{ call $lowCamel .Data.Name }}
+    delete:
+      summary: {{ .Data.Name }} Delete
+      tags: [{{ call $lowCamel .Data.Name }}]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AffectedRows:
+                    type: integer
+      operationId: get-{{ call $lowCamel .Data.Name }}
+      description: ''
+components:
+    schemas:
+        {{ call $camel .Data.Name }}ListResponse:
+            type: array
+            items:
+                $ref: '#/components/schemas/{{ call $camel .Data.Name }}Response'
+        {{ call $camel .Data.Name }}Response:
+          type: object
+          properties:
+            {{- range $i, $v := .Data.Entities }}
+            {{ $v.ColumnName | call $lowCamel }}:
+              type: {{ $v.DataType }}
+          {{- end }}
