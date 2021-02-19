@@ -4,21 +4,27 @@ import (
 	"{{ .Data.Module }}/internal/route"
 	"github.com/gogearbox/gearbox"
 	"github.com/iamgoroot/gearpg"
+	"flag"
+	"fmt"
 )
 
 func main() {
-	app := &gearpg.GeaRPG{Gear: gearbox.New(), PG: connect()}
-	defer app.PG.Close()
+	conn := flag.String("conn", "postgres://user:pass@localhost:5432/db_name", "-conn postgres://user:pass@localhost:5432/db_name")
+	port := flag.Int("port", 1234, "-port 1234")
+	flag.Parse()
+
+	app := &gearpg.GeaRPG{Gear: gearbox.New(), PG: connect(*conn)}
+	defer app.PG.Close(nil)
 
 	RouteStatic(app)
-{{ $camel := .CamelCase }}
+    {{ $camel := .CamelCase }}
     app.With(
     {{- range $index, $element := .Data.Names }}
         route.{{ call $camel $element }}(),
     {{- end }}
     )
 	// Start service
-	err := app.Gear.Start(":7890")
+	err := app.Gear.Start(fmt.Sprintf(":%d", *port))
 	if err != nil {
 		panic(err)
 	}

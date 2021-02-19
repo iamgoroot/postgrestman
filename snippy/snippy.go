@@ -24,6 +24,7 @@ type Snippy struct {
 	CamelCase    func(s string) string
 	LowCamelCase func(s string) string
 	SnakeCase    func(s string) string
+	KebabCase    func(s string) string
 	fs           embed.FS
 }
 
@@ -41,6 +42,7 @@ func NewSnippy(fs embed.FS, outputDir string) Snippy {
 		CamelCase:    strcase.UpperCamelCase,
 		LowCamelCase: strcase.LowerCamelCase,
 		SnakeCase:    strcase.SnakeCase,
+		KebabCase:    strcase.KebabCase,
 		fs:           fs,
 	}
 }

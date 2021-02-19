@@ -1,12 +1,39 @@
 services:
   serve:
-    image: golang:1.16-alpine
-    volumes:
-      - .:/src
+    build:
+      dockerfile: Dockerfile
+      context: .
     environment:
       CGO_ENABLED: 0
-
-    working_dir: /src
-    command: go mod tidy && go build ./... && go run {{ module}}
+    volumes:
+      - go-modules:/usr/local/go/pkg/mod
     ports:
-      - 1234:1234
+      - {{ .Data.Port }}:{{ .Data.Port }}
+    entrypoint: /gearbox
+    command:
+      - "-conn"
+      - "postgres://user:pass@db:5432/db_name?sslmode=disable"
+      - "-port"
+      - "{{ .Data.Port }}"
+    depends_on:
+      - db
+    networks:
+      - test
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: db_name
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    networks:
+      - test
+    ports:
+      - 5432:5432
+    volumes:
+      db:/var/lib/postgresql
+networks:
+  test:
+    driver: bridge
+volumes:
+  go-modules:
+  db:

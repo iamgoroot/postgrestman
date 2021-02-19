@@ -1,22 +1,20 @@
 package main
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/v11"
 	"github.com/gogearbox/gearbox"
 	"github.com/iamgoroot/gearpg"
 )
 
-func connect() *pg.DB {
-	return pg.Connect(&pg.Options{
-		User:     "test",
-		Password: "test",
-		Database: "test",
-		Addr:     "127.0.0.1:5432",
-	})
+func connect(conn string) *pg.DB {
+	opt, err := pg.ParseURL(conn)
+	if err != nil {
+		panic(err)
+	}
+	return pg.Connect(opt)
 }
 
 func RouteStatic(p *gearpg.GeaRPG) {
-
     p.Gear.Static("/openapi", "./api")
     {{ if eq .Data.OpenApiUI "rapidoc" }}
 	p.Gear.Get("/docs", func(ctx gearbox.Context) {

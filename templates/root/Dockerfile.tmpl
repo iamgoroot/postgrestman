@@ -1,0 +1,13 @@
+FROM golang:latest
+
+WORKDIR /postgrestman
+
+COPY . .
+
+RUN go mod tidy
+RUN go build -o / ./cmd/*
+
+
+EXPOSE {{ .Data.Port }}
+
+CMD ["/gearbox", "-conn", "{{ .Data.Conn }}", "-port", "{{ .Data.Port }}"]

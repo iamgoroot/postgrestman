@@ -17,6 +17,8 @@ Project is in pre-alpha status.
 ## Getting started
 
 ```
-go run github.com/iamgoroot/postgrestman -user alice -password securePass1 -db db_name -addr localhost:5432
+go get github.com/iamgoroot/postgrestman
+
+postgrestman -out . -assignPort 8080 -conn "postgres://user:pass@localhost:5432/db_name?sslmode=disable"
 ```
 

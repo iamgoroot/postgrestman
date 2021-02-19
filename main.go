@@ -3,60 +3,56 @@ package main
 import (
 	"embed"
 	"flag"
-	"github.com/go-pg/pg"
-	"github.com/iamgoroot/postgrestman/data"
+	pg "github.com/go-pg/pg/v11"
 	"github.com/iamgoroot/postgrestman/pg_info"
 	"github.com/iamgoroot/postgrestman/snippy"
+	"github.com/stoewer/go-strcase"
 	"log"
 )
 
 //go:embed templates/request/* templates/root/*
 var templates embed.FS
 
-type Args struct {
-	Addr     string
-	DB       string
-	Schema   string
-	User     string
-	Password string
-	Out      string
-	Module   string
-}
-
 func main() {
-	args := Args{}
-	flag.StringVar(&args.Addr, "addr", "localhost:5432", "-addr localhost:5432")
-	flag.StringVar(&args.DB, "db", "postgres", "-db batabase")
-	flag.StringVar(&args.DB, "schema", "public", "-schema schema")
-	flag.StringVar(&args.User, "user", "postgres", "-user user")
-	flag.StringVar(&args.Password, "MODULE", "postgres", "-password password")
-	flag.StringVar(&args.Out, "out", "out", "-out out_dir")
-	flag.StringVar(&args.Module, "module", "this/is/just/module/name", "-module github.com/{username}/{pkg}")
+	out := flag.String("out", "out", "-out out_dir")
+	conn := flag.String("conn", "postgres://user:pass@localhost:5432/db_name", "-url postgres://user:pass@localhost:5432/db_name")
+	module := flag.String("module", "generated/module", "-module github.com/{username}/{pkg}")
+	assignPort := flag.Int("assignPort", 1234, "-assignPort 8080")
+
 	flag.Parse()
 
-	pgInfoRepo := pg_info.PgInfoRepo{DB: pg.Connect(&pg.Options{
-		User:     args.User,
-		Password: args.Password,
-		Database: args.DB,
-		Addr:     args.Addr,
-	})}
-	defer pgInfoRepo.Close()
+	opt, err := pg.ParseURL(*conn)
+	if err != nil {
+		panic(err)
+	}
+	pgInfoRepo := pg_info.PgInfoRepo{DB: pg.Connect(opt)}
+	defer pgInfoRepo.Close(nil)
 
-	crawler := PgCrawler{pgInfoRepo: pgInfoRepo, DB: args.DB, Schema: args.Schema, GoModule: args.Module}
+	crawler := PgCrawler{pgInfoRepo: pgInfoRepo, DB: opt.Database, Schema: "public", GoModule: *module}
 
-	snp := snippy.NewSnippy(templates, args.Out)
+	snp := snippy.NewSnippy(templates, *out)
 	if err := snippy.Run(
-		snp.Prepare("templates/root/gomod.tmpl", args.Module, "go.mod"),
-		snp.Prepare("templates/root/docker-compose.tmpl", args.Module, "docker-compose.yaml"),
+
+		snp.Prepare("templates/root/gomod.tmpl", *module, "go.mod"),
+
+		snp.Prepare("templates/root/Dockerfile.tmpl", struct {
+			Conn   string
+			Module string
+			Port   int
+		}{*conn, *module, *assignPort}, "Dockerfile"),
+
+		snp.Prepare("templates/root/docker-compose.tmpl", struct {
+			Port int
+		}{*assignPort}, "docker-compose.yaml"),
 	); err != nil {
 		log.Panicln(err)
 	}
-	root := once(crawler, snp)
-	perTable(root.Names, crawler, snp)
+	templateRoot(crawler, snp)
+	pertemplateEndpoint(crawler, snp)
 }
 
-func once(crawler PgCrawler, snp snippy.Snippy) data.Root {
-	item, err := crawler.Root()
+func templateRoot(crawler PgCrawler, snp snippy.Snippy) {
+	item, err := crawler.GetSetup()
 	if err != nil {
 		log.Panicln("Could not read DB tables list", err)
 	}
@@ -67,17 +63,20 @@ func once(crawler PgCrawler, snp snippy.Snippy) data.Root {
 	); err != nil {
 		log.Panicln(err)
 	}
-	return item
 }
 
-func perTable(tables []string, crawler PgCrawler, snp snippy.Snippy) {
-	for _, table := range tables {
+func pertemplateEndpoint(crawler PgCrawler, snp snippy.Snippy) {
+	cruds, err := crawler.GetSetup()
+	if err != nil {
+		log.Panicln("Could not read DB tables list", err)
+	}
+	for _, table := range cruds.Names {
 		item, err := crawler.Read(table)
 		if err != nil {
 			log.Panicln(err)
 		}
 		if err := snippy.Run(
-			snp.Prepare("templates/request/api.tmpl", item, "api/openapi-"+table+".yaml"),
+			snp.Prepare("templates/request/api.tmpl", item, "api/openapi-"+strcase.KebabCase(table)+".yaml"),
 			snp.Prepare("templates/request/gearbox.tmpl", item, "internal/route", table+".go"),
 			snp.Prepare("templates/request/model.tmpl", item, "internal/models", table+".go"),
 		); err != nil {

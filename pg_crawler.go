@@ -17,24 +17,24 @@ type PgCrawler struct {
 	GoModule   string
 }
 
-func (r PgCrawler) Root() (data.Root, error) {
+func (r PgCrawler) GetSetup() (data.Setup, error) {
 	tables, err := r.pgInfoRepo.GetUserTables(r.DB, r.Schema)
 	if err != nil {
-		return data.Root{}, fmt.Errorf("failed get table list %w", err)
+		return data.Setup{}, fmt.Errorf("failed get table list %w", err)
 	}
-	return data.Root{Names: tables, OpenApiUI: ui, Module: r.GoModule}, err
+	return data.Setup{Names: tables, OpenApiUI: ui, Module: r.GoModule}, err
 }
 
-func (r PgCrawler) Read(name string) (data.Crud, error) {
-	root, err := r.Root()
+func (r PgCrawler) Read(name string) (data.Endpoint, error) {
+	root, err := r.GetSetup()
 	if err != nil {
 		fmt.Println("failed get cols for table", name, err)
-		return data.Crud{}, err
+		return data.Endpoint{}, err
 	}
 	columns, err := r.pgInfoRepo.GetUserColumns(r.DB, r.Schema, name)
 	if err != nil {
 		fmt.Println("failed get cols for table", name, err)
-		return data.Crud{Root: root}, err
+		return data.Endpoint{Setup: root}, err
 	}
 	entities := make([]data.RequestEntity, len(columns))
 	for i, column := range columns {
@@ -46,9 +46,9 @@ func (r PgCrawler) Read(name string) (data.Crud, error) {
 		filterable = append(filterable, key.Filterable()...)
 	}
 	unique.Strings(&filterable)
-	return data.Crud{
+	return data.Endpoint{
 		Name:       name,
-		Root:       root,
+		Setup:      root,
 		Entities:   entities,
 		GoType:     convPgToGoType,
 		Filterable: filterable,

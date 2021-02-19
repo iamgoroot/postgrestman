@@ -1,7 +1,8 @@
 package pg_info
 
 import (
-	"github.com/go-pg/pg"
+	"context"
+	pg "github.com/go-pg/pg/v11"
 	"log"
 	"strings"
 )
@@ -14,7 +15,7 @@ const distinctTables = "distinct(table_name) as tbl_name "
 
 func (r PgInfoRepo) GetUserTables(db string, schema string) ([]string, error) {
 	var columns []string
-	_, err := r.Query(&columns,
+	_, err := r.Query(context.Background(), &columns,
 		"SELECT "+distinctTables+"FROM information_schema.columns "+
 			columnsSelectBySchema, db, schema,
 	)
@@ -27,7 +28,7 @@ const (
 
 func (r PgInfoRepo) GetUserColumns(db string, schema string, table string) ([]Column, error) {
 	var columns []Column
-	_, err := r.Query(&columns,
+	_, err := r.Query(context.Background(), &columns,
 		"SELECT "+
 			columnsFields+
 			"FROM information_schema.columns "+
@@ -52,7 +53,7 @@ func (f Index) Filterable() []string {
 }
 
 func (r PgInfoRepo) GetIndexesForTable(schema string, table string) (res []Index) {
-	_, err := r.Query(&res,
+	_, err := r.Query(context.Background(), &res,
 		`
 	SELECT
 		indexname as Name,

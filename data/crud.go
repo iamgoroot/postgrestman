@@ -1,14 +1,14 @@
 package data
 
-type Crud struct {
-	Root
+type Endpoint struct {
+	Setup
 	Name       string
 	Entities   []RequestEntity
 	GoType     func(s string) TypeID
 	Filterable []string
 }
 
-type Root struct {
+type Setup struct {
 	Module    string
 	Names     []string
 	OpenApiUI string
